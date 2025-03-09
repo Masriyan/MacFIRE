@@ -1,5 +1,5 @@
 # MacFIRE – Mac Forensic Investigation & Response Engine
-
+![MacFIRE](https://github.com/Masriyan/MacFIRE/blob/main/image.jpg)
 ## Overview
 **MacFIRE** is a powerful macOS forensic tool designed to assist Digital Forensics and Incident Response (DFIR) professionals in acquiring and analyzing forensic artifacts from macOS devices. It supports disk imaging, artifact collection, persistence detection, network forensics, and automated report generation.
 
