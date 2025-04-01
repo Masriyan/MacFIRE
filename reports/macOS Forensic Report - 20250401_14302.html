@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>macOS Forensic Report - 20250401_143026</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; color: #333; }
+        h1, h2, h3 { color: #2c3e50; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background-color: #3498db; color: white; padding: 20px; border-radius: 5px; }
+        .section { margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 5px; }
+        .artifact { margin: 10px 0; }
+        .artifact-path { font-family: monospace; background-color: #f0f0f0; padding: 3px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; }
+        tr:hover { background-color: #f5f5f5; }
+        .footer { margin-top: 30px; font-size: 0.8em; text-align: center; color: #7f8c8d; }
+        .summary-box { background-color: #e8f4fc; border-left: 5px solid #3498db; padding: 10px; margin: 10px 0; }
+        .alert { background-color: #fdedec; border-left: 5px solid #e74c3c; padding: 10px; margin: 10px 0; }
+        .success { background-color: #edfcf0; border-left: 5px solid #2ecc71; padding: 10px; margin: 10px 0; }
+        .note { font-style: italic; color: #7f8c8d; }
+        .timestamp { color: #7f8c8d; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>macOS Forensic Report</h1>
+            <p>Generated on: 2025-04-01 14:30:26</p>
+        </div>
+        
+        <div class="section">
+            <h2>System Information</h2>
+            <pre>
+Hardware:
+
+    Hardware Overview:
+
+      Model Name: MacBook Pro
+      Model Identifier: MacBookPro16,1
+      Processor Name: 8-Core Intel Core i9
+      Processor Speed: 2.3 GHz
+      Number of Processors: 1
+      Total Number of Cores: 8
+      L2 Cache (per Core): 256 KB
+      L3 Cache: 16 MB
+      Hyper-Threading Technology: Enabled
+      Memory: 32 GB
+      System Firmware Version: 1715.60.5.0.0 (iBridge: 19.16.10072.0.0,0)
+      OS Loader Version: 540.120.3~22
+      Serial Number (system): C02ZK07HMD6N
+      Hardware UUID: F48698B5-5C0E-5BAE-B3DF-275F58FB9D7B
+      Provisioning UDID: F48698B5-5C0E-5BAE-B3DF-275F58FB9D7B
+      Activation Lock Status: Enabled
+            </pre>
+            <h3>macOS Version</h3>
+            <pre>
+ProductName:    macOS
+ProductVersion: 14.3.1
+BuildVersion:   23D60
+            </pre>
+            <h3>Hostname</h3>
+            <pre>Forensic-Mac-Pro</pre>
+        </div>
+        
+        <div class="section">
+            <h2>Acquisition Summary</h2>
+            <p>Acquisition performed by: forensic-admin</p>
+            <p>Tool version: macOS Forensic Acquisition Tool v1.1</p>
+            <p>Acquisition timestamp: 2025-04-01 14:30:26</p>
+
+            <div class="summary-box">
+                <h3>Case Information</h3>
+                <p><strong>Case Number:</strong> CASE-2025-0401</p>
+                <p><strong>Examiner:</strong> John Smith</p>
+                <p><strong>Subject:</strong> Executive Laptop Analysis</p>
+                <p><strong>Chain of Custody:</strong> Direct acquisition from subject system</p>
+            </div>
+
+            <h3>Artifact Collection Statistics</h3>
+            <p>Collection started: 2025-04-01T14:15:42.325612</p>
+            <p>Collection completed: 2025-04-01T14:28:37.981453</p>
+            <p>Duration: 775.66 seconds</p>
+            <p>Artifacts collected: 89</p>
+            <p>Artifacts failed: 7</p>
+            
+            <h3>Categories</h3>
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Collected</th>
+                    <th>Failed</th>
+                </tr>
+
+                <tr>
+                    <td>System Information</td>
+                    <td>Basic system information</td>
+                    <td>6</td>
+                    <td>0</td>
+                </tr>
+
+                <tr>
+                    <td>File System</td>
+                    <td>File system artifacts and metadata</td>
+                    <td>10</td>
+                    <td>2</td>
+                </tr>
+
+                <tr>
+                    <td>User Data</td>
+                    <td>User-specific data and configurations</td>
+                    <td>38</td>
+                    <td>3</td>
+                </tr>
+
+                <tr>
+                    <td>System Security</td>
+                    <td>Security-related artifacts</td>
+                    <td>12</td>
+                    <td>1</td>
+                </tr>
+
+                <tr>
+                    <td>Network</td>
+                    <td>Network configurations and connections</td>
+                    <td>9</td>
+                    <td>0</td>
+                </tr>
+
+                <tr>
+                    <td>Running System</td>
+                    <td>Currently running processes and services</td>
+                    <td>14</td>
+                    <td>1</td>
+                </tr>
+            </table>
+
+            <div class="alert">
+                <p><strong>Collection Issues:</strong> Some artifacts could not be collected due to permission issues or files not present on the system. See detailed logs for more information.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Disk Image Information</h2>
+            <table>
+                <tr>
+                    <th>Image File</th>
+                    <th>Source</th>
+                    <th>Size</th>
+                    <th>SHA-256 Hash</th>
+                </tr>
+                <tr>
+                    <td>disk0_20250401_143026.dd</td>
+                    <td>/dev/disk0</td>
+                    <td>500.28 GB</td>
+                    <td><span class="artifact-path">e7b834c239b4af7783d875e4a73c8f685a0f0b19c384248f97b7aeca7b535ce9</span></td>
+                </tr>
+            </table>
+            <div class="success">
+                <p><strong>Verification:</strong> Image hash verified and acquisition completed successfully.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Collected Artifacts</h2>
+
+            <h3>System Information</h3>
+            <p>Basic system information</p>
+            
+            <h4>Files & Directories</h4>
+            <ul>
+            </ul>
+            
+            <h4>Commands</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">system_profiler SPHardwareDataType > ./system_info.txt</span></li>
+                <li class="artifact"><span class="artifact-path">sw_vers > ./macos_version.txt</span></li>
+                <li class="artifact"><span class="artifact-path">hostname > ./hostname.txt</span></li>
+                <li class="artifact"><span class="artifact-path">whoami > ./current_user.txt</span></li>
+                <li class="artifact"><span class="artifact-path">date > ./acquisition_date.txt</span></li>
+                <li class="artifact"><span class="artifact-path">uptime > ./uptime.txt</span></li>
+            </ul>
+
+            <h3>File System</h3>
+            <p>File system artifacts and metadata</p>
+            
+            <h4>Files & Directories</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">/var/log/system.log</span></li>
+                <li class="artifact"><span class="artifact-path">/private/var/db/Spotlight-V100/</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2</span></li>
+            </ul>
+            
+            <h4>Commands</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">ls -la /Volumes/ > ./mounted_volumes.txt</span></li>
+                <li class="artifact"><span class="artifact-path">df -h > ./disk_usage.txt</span></li>
+                <li class="artifact"><span class="artifact-path">sudo find / -type f -mtime -7 -not -path '*/\.*' > ./recent_files_7days.txt</span></li>
+            </ul>
+
+            <h3>User Data</h3>
+            <p>User-specific data and configurations</p>
+            
+            <h4>Files & Directories</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">~/Library/Preferences</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Application Support</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Logs</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Keychains/</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Messages/chat.db</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Safari/History.db</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Application Support/Google/Chrome/Default/History</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Mail</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Containers/com.apple.mail/Data/Library/Mail Downloads</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Calendars</span></li>
+                <li class="artifact"><span class="artifact-path">~/Library/Accounts</span></li>
+            </ul>
+            
+            <h4>Commands</h4>
+            <ul>
+            </ul>
+
+            <h3>System Security</h3>
+            <p>Security-related artifacts</p>
+            
+            <h4>Files & Directories</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">/Library/Application Support/com.apple.TCC/TCC.db</span></li>
+                <li class="artifact"><span class="artifact-path">/var/log/secure.log</span></li>
+            </ul>
+            
+            <h4>Commands</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">sudo log collect --last 24h --output ./security_logs.logarchive</span></li>
+                <li class="artifact"><span class="artifact-path">sudo pfctl -s rules > ./firewall_rules.txt</span></li>
+                <li class="artifact"><span class="artifact-path">security authorizationdb read system.preferences > ./system_auth.txt</span></li>
+                <li class="artifact"><span class="artifact-path">sudo launchctl list > ./launch_daemons.txt</span></li>
+            </ul>
+
+            <h3>Network</h3>
+            <p>Network configurations and connections</p>
+            
+            <h4>Files & Directories</h4>
+            <ul>
+            </ul>
+            
+            <h4>Commands</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">ifconfig > ./network_interfaces.txt</span></li>
+                <li class="artifact"><span class="artifact-path">arp -a > ./arp_cache.txt</span></li>
+                <li class="artifact"><span class="artifact-path">netstat -an > ./network_connections.txt</span></li>
+                <li class="artifact"><span class="artifact-path">netstat -rn > ./routing_table.txt</span></li>
+                <li class="artifact"><span class="artifact-path">scutil --dns > ./dns_config.txt</span></li>
+                <li class="artifact"><span class="artifact-path">defaults read /Library/Preferences/SystemConfiguration/com.apple.airport.preferences > ./wifi_preferences.txt</span></li>
+            </ul>
+
+            <h3>Running System</h3>
+            <p>Currently running processes and services</p>
+            
+            <h4>Files & Directories</h4>
+            <ul>
+            </ul>
+            
+            <h4>Commands</h4>
+            <ul>
+                <li class="artifact"><span class="artifact-path">ps aux > ./running_processes.txt</span></li>
+                <li class="artifact"><span class="artifact-path">lsof > ./open_files.txt</span></li>
+                <li class="artifact"><span class="artifact-path">ls -la /Library/LaunchAgents/ /Library/LaunchDaemons/ ~/Library/LaunchAgents/ > ./launch_agents.txt</span></li>
+                <li class="artifact"><span class="artifact-path">kmutil showloaded > ./kernel_extensions.txt</span></li>
+                <li class="artifact"><span class="artifact-path">sysctl -a > ./system_control.txt</span></li>
+            </ul>
+
+            <div class="note">
+                <p>Note: Some file paths have been abbreviated for display purposes. Complete artifacts can be found in the evidence directory.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Preliminary Findings</h2>
+            <p>The following notable items were observed during initial analysis:</p>
+            <ul>
+                <li>System last restarted: 2025-04-01 09:15:23 (5 hours prior to acquisition)</li>
+                <li>User login history shows regular activity between 08:00-17:00 on weekdays</li>
+                <li>Chrome browser history contains numerous visits to cloud storage services</li>
+                <li>Several USB devices were connected in the past 30 days (see USB history for details)</li>
+                <li>Network connections established to multiple external IP addresses</li>
+            </ul>
+            <p class="note">This is an automatically generated summary. Further analysis is recommended.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Generated by macOS Forensic Acquisition Tool v1.1</p>
+            <p>Sudo3rs &copy; 2025</p>
+            <p class="timestamp">Report ID: FR-20250401-143026-98A7</p>
+        </div>
+    </div>
+</body>
+</html>
