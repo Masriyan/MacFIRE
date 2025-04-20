@@ -10,16 +10,47 @@
 
 macFIRE is a comprehensive forensic acquisition tool for macOS systems. It enables digital forensic investigators, security professionals, and system administrators to collect vital forensic artifacts, create disk images, and generate detailed reports.
 
+```
+=============================================
+  _____                ____________________ 
+ |     |              |                    |
+ | Mac |==============| F I R E           |
+ |_____|              |____________________|
+
+ macOS Forensic Investigation & Recovery Environment
+ Version 1.1 
+ by Sudo3rs
+=============================================
+```
+
 ## Features
 
-- **Comprehensive Artifact Collection**: Collect and preserve critical macOS system artifacts organized by categories (System Information, User Data, Security, Network, etc.)
+- **Comprehensive Artifact Collection**: Collect and preserve critical macOS system artifacts organized by categories
 - **Raw Disk Imaging**: Create forensically sound disk images with integrity verification
+- **Memory Acquisition**: Capture volatile memory data and process information
 - **Detailed Reporting**: Generate HTML reports summarizing collected data and system information
+- **Artifact Compression**: Compress collected artifacts with integrity verification
+- **Rootkit Detection**: Scan for known rootkit signatures and suspicious system modifications
+- **System Timeline**: Generate chronological system activity timelines
+- **Browser History Extraction**: Extract and analyze web browser data
+- **Encrypted Volume Analysis**: Identify and analyze encrypted volumes and containers
 - **Category-based Collection**: Selectively collect artifacts based on specific categories of interest
-- **Integrity Verification**: Automatically calculate SHA-256 hashes for all acquired disk images
+- **Integrity Verification**: Automatically calculate SHA-256 hashes for all acquired data
 - **Progress Tracking**: Visual feedback for lengthy operations
 - **Extensive Logging**: Detailed logging of all operations for audit trails
 - **Error Handling**: Comprehensive error detection and reporting
+
+## What's New in Version 1.1
+
+- **Simplified Interface**: Streamlined banner and improved user experience
+- **Expanded Capabilities**: Added several new forensic features including memory acquisition, rootkit detection, and timeline generation
+- **New Artifact Categories**: Added Browser Data and Memory Acquisition categories
+- **Enhanced Command Line Interface**: Organized commands into logical groups with better help text
+- **Artifact Compression**: Added ability to compress collected artifacts for easier storage and transfer
+- **Metadata Backup**: Added comprehensive metadata recording for all collected artifacts
+- **Improved Error Handling**: Better error detection and reporting throughout the application
+
+For a complete list of changes, see the [UPDATE.md](UPDATE.md) file.
 
 ## Supported macOS Versions
 
@@ -70,6 +101,9 @@ sudo python3 macfire.py --collect-artifacts ./evidence
 
 # Collect specific categories of artifacts
 sudo python3 macfire.py --collect-artifacts ./evidence --categories "System Security" "Network"
+
+# Collect and compress artifacts
+sudo python3 macfire.py --collect-artifacts ./evidence --compress
 ```
 
 ### Disk Imaging
@@ -83,6 +117,39 @@ sudo python3 macfire.py --create-raw ./disk_images --skip-hash
 
 # Unmount a disk before imaging
 sudo python3 macfire.py --unmount /dev/disk2
+
+# Verify a disk image
+python3 macfire.py --verify-image ./disk_images/disk2_20250420_123456.dd
+```
+
+### Memory Acquisition
+
+```bash
+# Acquire memory artifacts
+sudo python3 macfire.py --memory-dump ./memory_evidence
+```
+
+### Security Analysis
+
+```bash
+# Check for rootkits and suspicious modifications
+sudo python3 macfire.py --rootkit-check ./security_check
+
+# Identify and analyze encrypted volumes
+sudo python3 macfire.py --encrypted-volumes ./encryption_info
+```
+
+### Browser History and Timeline Analysis
+
+```bash
+# Extract browser history from Safari, Chrome, and Firefox
+python3 macfire.py --browser-history ./browser_data
+
+# Generate a 7-day system timeline (default)
+sudo python3 macfire.py --system-timeline ./timeline
+
+# Generate a 30-day system timeline
+sudo python3 macfire.py --system-timeline ./timeline --timeline-days 30
 ```
 
 ### Reporting
@@ -90,6 +157,9 @@ sudo python3 macfire.py --unmount /dev/disk2
 ```bash
 # Generate a forensic report from collected artifacts
 python3 macfire.py --generate-report ./reports --artifacts-path ./evidence/artifacts_20250401_123456
+
+# Create metadata for collected artifacts
+python3 macfire.py --backup-metadata ./evidence/artifacts_20250401_123456
 ```
 
 ### Additional Options
@@ -112,6 +182,8 @@ macFIRE collects the following categories of artifacts:
 4. **System Security**: Security logs, TCC database, firewall rules, authorization settings
 5. **Network**: Network interfaces, connections, ARP cache, routing tables, DNS configuration
 6. **Running System**: Current processes, open files, launch agents, kernel extensions
+7. **Browser Data**: Web browser artifacts including history, downloads, cookies, and bookmarks
+8. **Memory Acquisition**: Volatile memory information and running processes
 
 ## Sample Reports
 
