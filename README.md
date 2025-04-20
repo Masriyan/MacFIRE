@@ -40,7 +40,7 @@ macFIRE is a comprehensive forensic acquisition tool for macOS systems. It enabl
 - **Extensive Logging**: Detailed logging of all operations for audit trails
 - **Error Handling**: Comprehensive error detection and reporting
 
-## What's New in Version 1.1
+## What's New in Version 1.2
 
 - **Simplified Interface**: Streamlined banner and improved user experience
 - **Expanded Capabilities**: Added several new forensic features including memory acquisition, rootkit detection, and timeline generation
@@ -188,7 +188,7 @@ macFIRE collects the following categories of artifacts:
 ## Sample Reports
 
 <p align="center">
-  <img src="sample_report.png" alt="Sample Report" width="600">
+https://macfire.tiiny.site
 </p>
 
 ## Security and Privacy Considerations
