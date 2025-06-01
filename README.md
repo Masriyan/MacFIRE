@@ -69,7 +69,7 @@ For a complete list of changes, see the [UPDATE.md](UPDATE.md) file.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/sudo3rs/macfire.git
+git clone https://github.com/Masriyan/macfire.git
 cd macfire
 ```
 
