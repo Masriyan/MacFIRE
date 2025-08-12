@@ -12,13 +12,15 @@ macFIRE is a comprehensive forensic acquisition tool for macOS systems. It enabl
 
 ```
 =============================================
-  _____                ____________________ 
- |     |              |                    |
- | Mac |==============| F I R E           |
- |_____|              |____________________|
-
- macOS Forensic Investigation & Recovery Environment
- Version 1.1 
+  __  __            _____ _                 
+ |  \/  |          |  ___(_)                
+ | .  . | __ _  ___| |_   _ _ __ ___        
+ | |\/| |/ _` |/ __|  _| | | '_ ` _ \       
+ | |  | | (_| | (__| |   | | | | | | |      
+ \_|  |_/\__,_|\___\_|   |_|_| |_| |_|      
+                                            
+ Mac Forensic Investigation & Response Engine
+ Version 1.3
  by Sudo3rs
 =============================================
 ```
@@ -35,10 +37,17 @@ macFIRE is a comprehensive forensic acquisition tool for macOS systems. It enabl
 - **Browser History Extraction**: Extract and analyze web browser data
 - **Encrypted Volume Analysis**: Identify and analyze encrypted volumes and containers
 - **Category-based Collection**: Selectively collect artifacts based on specific categories of interest
+- **Category Listing**: Display available artifact categories and descriptions
 - **Integrity Verification**: Automatically calculate SHA-256 hashes for all acquired data
 - **Progress Tracking**: Visual feedback for lengthy operations
 - **Extensive Logging**: Detailed logging of all operations for audit trails
 - **Error Handling**: Comprehensive error detection and reporting
+
+## What's New in Version 1.3
+
+- **Category Listing**: New `--list-categories` option displays available artifact categories.
+- **Refreshed Banner**: Updated banner for clearer presentation.
+- **Documentation Enhancements**: Improved README with additional usage examples.
 
 ## What's New in Version 1.2
 
@@ -91,6 +100,9 @@ python3 macfire.py --list-disks
 
 # Detect external storage devices
 python3 macfire.py --detect-external
+
+# List available artifact categories
+python3 macfire.py --list-categories
 ```
 
 ### Collecting Forensic Artifacts
