@@ -1,0 +1,43 @@
+# MacFIRE Requirements
+
+# ============================================================================
+# Core Dependencies
+# ============================================================================
+# MacFIRE uses Python standard library only - no external dependencies required!
+# This ensures maximum compatibility and security for forensic environments.
+
+# ============================================================================
+# Required Python Version
+# ============================================================================
+# Python >= 3.8 is required for:
+# - Type hints with Optional, Dict, List, etc.
+# - dataclasses module
+# - f-string formatting improvements
+# - concurrent.futures enhancements
+
+# ============================================================================
+# Optional System Tools (Enhanced Functionality)
+# ============================================================================
+# The following tools enhance MacFIRE's capabilities if available:
+#
+# dcfldd - Enhanced dd with built-in hashing (for disk imaging)
+#   Install: brew install dcfldd
+#
+# osxpmem - Memory acquisition tool
+#   Download: https://github.com/Velocidex/WinPmem/releases
+#
+# sqlite3 - SQLite database analysis (usually pre-installed on macOS)
+#
+# plutil - Property list tool (pre-installed on macOS)
+
+# ============================================================================
+# Development Dependencies (Optional)
+# ============================================================================
+# Uncomment and install for development/testing:
+#
+# pytest>=7.0.0          # Testing framework
+# pytest-cov>=4.0.0      # Coverage reporting
+# black>=23.0.0          # Code formatting
+# isort>=5.12.0          # Import sorting
+# mypy>=1.0.0            # Static type checking
+# flake8>=6.0.0          # Linting

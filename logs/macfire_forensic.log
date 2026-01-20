@@ -1,0 +1,6 @@
+2026-01-20 00:33:30 - macFIRE - INFO - Supported macOS Versions: macOS Catalina (10.15) and later
+2026-01-20 00:34:00 - macFIRE - INFO - Supported macOS Versions: macOS Catalina (10.15) and later
+2026-01-20 00:34:00 - macFIRE - INFO - Detected macOS version: 
+2026-01-20 00:34:00 - macFIRE - ERROR - Unhandled exception: could not convert string to float: ''
+2026-01-20 00:34:59 - macFIRE - INFO - Supported macOS Versions: macOS Catalina (10.15) and later
+2026-01-20 00:34:59 - macFIRE - WARNING - Not running on macOS - some features may not work correctly

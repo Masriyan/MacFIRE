@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+"""
+MacFIRE - macOS Forensic Investigation & Response Engine
+Version 2.0
+
+A comprehensive forensic acquisition and incident response tool for macOS systems.
+Designed for digital forensic investigators, security professionals, and incident responders.
+
+Copyright (c) 2025 Sudo3rs
+Licensed under MIT License
+"""
+
 import os
 import sys
 import subprocess
@@ -13,51 +25,214 @@ import logging
 import tempfile
 import zipfile
 import re
+import signal
+import functools
 from pathlib import Path
+from typing import Optional, Dict, List, Any, Callable, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from logging.handlers import RotatingFileHandler
+from dataclasses import dataclass, field
+from enum import Enum
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("macfire_forensic.log")
-    ]
-)
-logger = logging.getLogger("macFIRE")
+# ============================================================================
+# Version Information
+# ============================================================================
+__version__ = "2.0.0"
+__author__ = "Sudo3rs"
+__email__ = "riyan.pratama@security-life.org"
 
-# Simplified Banner
+# ============================================================================
+# Custom Exceptions
+# ============================================================================
+class MacFIREException(Exception):
+    """Base exception for MacFIRE"""
+    pass
+
+class CommandTimeoutError(MacFIREException):
+    """Raised when a command times out"""
+    pass
+
+class CommandExecutionError(MacFIREException):
+    """Raised when a command fails to execute"""
+    pass
+
+class ArtifactCollectionError(MacFIREException):
+    """Raised when artifact collection fails"""
+    pass
+
+class DiskImagingError(MacFIREException):
+    """Raised when disk imaging fails"""
+    pass
+
+class ValidationError(MacFIREException):
+    """Raised when input validation fails"""
+    pass
+
+# ============================================================================
+# Enums and Data Classes
+# ============================================================================
+class SeverityLevel(Enum):
+    """Severity levels for findings"""
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
+
+@dataclass
+class CaseInfo:
+    """Case management information"""
+    case_number: str = ""
+    examiner: str = ""
+    organization: str = ""
+    subject: str = ""
+    description: str = ""
+    created_at: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+
+@dataclass
+class Finding:
+    """Represents a forensic finding or IOC"""
+    title: str
+    description: str
+    severity: SeverityLevel
+    category: str
+    indicator: str = ""
+    mitre_attack: str = ""
+    evidence_path: str = ""
+    timestamp: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+def setup_logging(log_level: str = "INFO", log_file: str = "macfire_forensic.log") -> logging.Logger:
+    """Configure logging with rotation support"""
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    log_path = log_dir / log_file
+    
+    # Create formatter
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # Console handler with colors
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    
+    # Rotating file handler (10MB max, keep 5 backups)
+    file_handler = RotatingFileHandler(
+        log_path,
+        maxBytes=10*1024*1024,
+        backupCount=5
+    )
+    file_handler.setFormatter(formatter)
+    
+    # Configure logger
+    logger = logging.getLogger("macFIRE")
+    logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
+    logger.handlers = []  # Clear existing handlers
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+    
+    return logger
+
+logger = setup_logging()
+
+# ============================================================================
+# Banner and Configuration
+# ============================================================================
 BANNER = """
-=============================================
-  _____                ____________________ 
- |     |              |                    |
- | Mac |==============| F I R E           |
- |_____|              |____________________|
-
- macOS Forensic Investigation & Recovery Environment
- Version 1.2 
- by Sudo3rs
-=============================================
+\033[38;5;208m╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║  \033[38;5;196m🔥\033[38;5;208m  ███╗   ███╗ █████╗  ██████╗███████╗██╗██████╗ ███████╗  \033[38;5;196m🔥\033[38;5;208m  ║
+║      ████╗ ████║██╔══██╗██╔════╝██╔════╝██║██╔══██╗██╔════╝      ║
+║      ██╔████╔██║███████║██║     █████╗  ██║██████╔╝█████╗        ║
+║      ██║╚██╔╝██║██╔══██║██║     ██╔══╝  ██║██╔══██╗██╔══╝        ║
+║      ██║ ╚═╝ ██║██║  ██║╚██████╗██║     ██║██║  ██║███████╗      ║
+║      ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝      ║
+║                                                                  ║
+║\033[38;5;45m     macOS Forensic Investigation & Response Engine v2.0        \033[38;5;208m║
+║\033[38;5;250m              Incident Response & Forensic Analysis              \033[38;5;208m║
+║\033[38;5;245m                      by Sudo3rs © 2025                          \033[38;5;208m║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝\033[0m
 """
 
 # Supported macOS Versions
 SUPPORTED_MACOS = "macOS Catalina (10.15) and later"
 
-# Forensic tool configuration - organized by categories
+# MITRE ATT&CK Mappings for common findings
+MITRE_ATTACK_MAPPINGS = {
+    "persistence": {
+        "launch_agents": "T1543.001",
+        "launch_daemons": "T1543.004",
+        "login_items": "T1547.011",
+        "cron": "T1053.003",
+    },
+    "credential_access": {
+        "keychain": "T1555.001",
+        "browser_credentials": "T1555.003",
+    },
+    "defense_evasion": {
+        "hidden_files": "T1564.001",
+        "rootkit": "T1014",
+    },
+    "discovery": {
+        "system_info": "T1082",
+        "network_config": "T1016",
+        "process_discovery": "T1057",
+    },
+    "collection": {
+        "browser_data": "T1185",
+        "email": "T1114",
+    }
+}
+
+# Known IOC patterns for detection
+IOC_PATTERNS = {
+    "suspicious_paths": [
+        "/tmp/.*\\.sh$",
+        "/var/tmp/.*",
+        "/Users/Shared/.*\\.app$",
+        ".*\\.hidden.*",
+    ],
+    "suspicious_processes": [
+        "nc", "ncat", "netcat",
+        "socat", "cryptominer",
+        "xmrig", "minerd",
+    ],
+    "persistence_locations": [
+        "/Library/LaunchAgents",
+        "/Library/LaunchDaemons",
+        "~/Library/LaunchAgents",
+        "/Library/StartupItems",
+    ]
+}
+
+# ============================================================================
+# Forensic Artifact Configuration
+# ============================================================================
 ARTIFACTS = {
     "System Information": {
-        "description": "Basic system information",
+        "description": "Basic system information and hardware details",
+        "priority": 1,
         "commands": [
             "system_profiler SPHardwareDataType > ./system_info.txt",
+            "system_profiler SPSoftwareDataType > ./software_info.txt",
             "sw_vers > ./macos_version.txt",
             "hostname > ./hostname.txt",
             "whoami > ./current_user.txt",
             "date > ./acquisition_date.txt",
-            "uptime > ./uptime.txt"
+            "uptime > ./uptime.txt",
+            "uname -a > ./kernel_info.txt",
+            "sysctl kern.boottime > ./boot_time.txt"
         ]
     },
     "File System": {
         "description": "File system artifacts and metadata",
+        "priority": 2,
         "paths": [
             "/var/log/system.log",
             "/private/var/db/Spotlight-V100/",
@@ -66,11 +241,13 @@ ARTIFACTS = {
         "commands": [
             "ls -la /Volumes/ > ./mounted_volumes.txt",
             "df -h > ./disk_usage.txt",
-            "sudo find / -type f -mtime -7 -not -path '*/\.*' > ./recent_files_7days.txt"
+            "diskutil list > ./disk_list.txt",
+            "sudo find / -type f -mtime -7 -not -path '*/\\.*' 2>/dev/null | head -5000 > ./recent_files_7days.txt"
         ]
     },
     "User Data": {
         "description": "User-specific data and configurations",
+        "priority": 3,
         "paths": [
             "~/Library/Preferences",
             "~/Library/Application Support",
@@ -86,41 +263,50 @@ ARTIFACTS = {
         ]
     },
     "System Security": {
-        "description": "Security-related artifacts",
+        "description": "Security-related artifacts and permissions",
+        "priority": 1,
         "paths": [
             "/Library/Application Support/com.apple.TCC/TCC.db",
-            "/var/log/secure.log"
+            "/var/log/secure.log",
+            "~/Library/Application Support/com.apple.TCC/TCC.db"
         ],
         "commands": [
-            "sudo log collect --last 24h --output ./security_logs.logarchive",
-            "sudo pfctl -s rules > ./firewall_rules.txt",
-            "security authorizationdb read system.preferences > ./system_auth.txt",
-            "sudo launchctl list > ./launch_daemons.txt"
+            "sudo log collect --last 24h --output ./security_logs.logarchive 2>/dev/null || echo 'Log collection requires root'",
+            "sudo pfctl -s rules > ./firewall_rules.txt 2>/dev/null || echo 'Firewall rules require root'",
+            "security authorizationdb read system.preferences > ./system_auth.txt 2>/dev/null",
+            "sudo launchctl list > ./launch_daemons.txt 2>/dev/null",
+            "csrutil status > ./sip_status.txt 2>/dev/null",
+            "spctl --status > ./gatekeeper_status.txt 2>/dev/null"
         ]
     },
     "Network": {
-        "description": "Network configurations and connections",
+        "description": "Network configurations and active connections",
+        "priority": 2,
         "commands": [
             "ifconfig > ./network_interfaces.txt",
             "arp -a > ./arp_cache.txt",
             "netstat -an > ./network_connections.txt",
             "netstat -rn > ./routing_table.txt",
             "scutil --dns > ./dns_config.txt",
-            "defaults read /Library/Preferences/SystemConfiguration/com.apple.airport.preferences > ./wifi_preferences.txt"
+            "networksetup -listallnetworkservices > ./network_services.txt",
+            "defaults read /Library/Preferences/SystemConfiguration/com.apple.airport.preferences > ./wifi_preferences.txt 2>/dev/null || echo 'No WiFi preferences'"
         ]
     },
     "Running System": {
         "description": "Currently running processes and services",
+        "priority": 1,
         "commands": [
             "ps aux > ./running_processes.txt",
-            "lsof > ./open_files.txt",
-            "ls -la /Library/LaunchAgents/ /Library/LaunchDaemons/ ~/Library/LaunchAgents/ > ./launch_agents.txt",
-            "kmutil showloaded > ./kernel_extensions.txt",
-            "sysctl -a > ./system_control.txt"
+            "lsof -i > ./open_network_files.txt 2>/dev/null",
+            "lsof > ./open_files.txt 2>/dev/null",
+            "ls -la /Library/LaunchAgents/ /Library/LaunchDaemons/ ~/Library/LaunchAgents/ 2>/dev/null > ./launch_agents.txt",
+            "kmutil showloaded > ./kernel_extensions.txt 2>/dev/null || kextstat > ./kernel_extensions.txt",
+            "sysctl -a > ./system_control.txt 2>/dev/null"
         ]
     },
     "Browser Data": {
         "description": "Web browser artifacts and history",
+        "priority": 3,
         "paths": [
             "~/Library/Safari/History.db",
             "~/Library/Safari/Downloads.plist",
@@ -132,25 +318,204 @@ ARTIFACTS = {
             "~/Library/Application Support/Firefox/Profiles/*/cookies.sqlite"
         ],
         "commands": [
-            "find ~/Library/Safari ~/Library/Application\\ Support/Google/Chrome ~/Library/Application\\ Support/Firefox -type f -name '*history*' -o -name '*cookie*' -o -name '*bookmark*' | grep -v Cache > ./browser_files.txt"
+            "find ~/Library/Safari ~/Library/Application\\ Support/Google/Chrome ~/Library/Application\\ Support/Firefox -type f -name '*history*' -o -name '*cookie*' -o -name '*bookmark*' 2>/dev/null | grep -v Cache > ./browser_files.txt"
         ]
     },
     "Memory Acquisition": {
         "description": "Memory acquisition and volatile data",
+        "priority": 1,
         "commands": [
             "ps aux > ./process_listing.txt",
-            "lsof > ./open_files_memory.txt",
+            "lsof > ./open_files_memory.txt 2>/dev/null",
             "netstat -an > ./network_connections_memory.txt",
             "sysctl hw > ./hardware_memory_info.txt",
             "vm_stat > ./vm_statistics.txt",
             "top -l 1 > ./top_processes.txt"
         ]
+    },
+    "Apple Unified Logs": {
+        "description": "Apple Unified Logging System artifacts",
+        "priority": 2,
+        "commands": [
+            "log show --last 24h --style compact > ./unified_logs_24h.txt 2>/dev/null || echo 'Unified logs require appropriate permissions'",
+            "log show --predicate 'eventType == logEvent AND messageType == error' --last 7d --style compact > ./error_logs_7d.txt 2>/dev/null",
+            "log show --predicate 'subsystem == \"com.apple.securityd\"' --last 24h > ./security_subsystem_logs.txt 2>/dev/null",
+            "log show --predicate 'process == \"sudo\"' --last 7d > ./sudo_logs.txt 2>/dev/null"
+        ]
+    },
+    "USB History": {
+        "description": "USB device connection history and artifacts",
+        "priority": 2,
+        "paths": [
+            "/var/db/lockdown"
+        ],
+        "commands": [
+            "system_profiler SPUSBDataType > ./usb_devices.txt",
+            "ioreg -p IOUSB -w0 > ./ioreg_usb.txt",
+            "ls -la /var/db/lockdown/ > ./lockdown_records.txt 2>/dev/null || echo 'Requires root access'"
+        ]
+    },
+    "Application History": {
+        "description": "Application installation and usage history",
+        "priority": 3,
+        "paths": [
+            "~/Library/Application Support/com.apple.spotlight/appAnalytics.db"
+        ],
+        "commands": [
+            "mdfind 'kMDItemContentType == \"com.apple.application-bundle\"' 2>/dev/null | head -500 > ./installed_apps.txt",
+            "ls -la /Applications > ./applications_list.txt",
+            "ls -la ~/Applications > ./user_applications_list.txt 2>/dev/null || echo 'No user Applications folder'",
+            "system_profiler SPApplicationsDataType > ./all_applications.txt"
+        ]
+    },
+    "iCloud Artifacts": {
+        "description": "iCloud synchronization and cloud storage artifacts",
+        "priority": 3,
+        "paths": [
+            "~/Library/Mobile Documents",
+            "~/Library/Application Support/CloudDocs",
+            "~/Library/Caches/CloudKit"
+        ],
+        "commands": [
+            "ls -la ~/Library/Mobile\\ Documents/ > ./icloud_documents.txt 2>/dev/null || echo 'No iCloud Documents'",
+            "brctl status > ./icloud_status.txt 2>/dev/null || echo 'brctl not available'"
+        ]
+    },
+    "Persistence Mechanisms": {
+        "description": "Common persistence locations and configurations",
+        "priority": 1,
+        "paths": [
+            "/Library/LaunchAgents",
+            "/Library/LaunchDaemons",
+            "~/Library/LaunchAgents",
+            "/Library/StartupItems",
+            "/System/Library/LaunchAgents",
+            "/System/Library/LaunchDaemons"
+        ],
+        "commands": [
+            "crontab -l > ./user_crontab.txt 2>/dev/null || echo 'No crontab for current user'",
+            "sudo crontab -l > ./root_crontab.txt 2>/dev/null || echo 'Root crontab requires sudo'",
+            "cat /etc/crontab > ./system_crontab.txt 2>/dev/null || echo 'No system crontab'",
+            "osascript -e 'tell application \"System Events\" to get the name of every login item' > ./login_items.txt 2>/dev/null || echo 'Cannot get login items'"
+        ]
     }
 }
 
-# Progress bar for visual feedback
+# ============================================================================
+# Helper Functions and Decorators
+# ============================================================================
+
+def timeout(seconds: int = 300):
+    """Decorator to add timeout to functions"""
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            result = [None]
+            exception = [None]
+            
+            def target():
+                try:
+                    result[0] = func(*args, **kwargs)
+                except Exception as e:
+                    exception[0] = e
+            
+            thread = threading.Thread(target=target)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=seconds)
+            
+            if thread.is_alive():
+                raise CommandTimeoutError(f"Function {func.__name__} timed out after {seconds} seconds")
+            
+            if exception[0]:
+                raise exception[0]
+            
+            return result[0]
+        return wrapper
+    return decorator
+
+
+def retry(max_attempts: int = 3, delay: float = 1.0, backoff: float = 2.0):
+    """Decorator to retry functions with exponential backoff"""
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            current_delay = delay
+            last_exception = None
+            
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_attempts - 1:
+                        logger.warning(f"Attempt {attempt + 1}/{max_attempts} failed: {e}. Retrying in {current_delay:.1f}s...")
+                        time.sleep(current_delay)
+                        current_delay *= backoff
+                    else:
+                        logger.error(f"All {max_attempts} attempts failed for {func.__name__}")
+            
+            raise last_exception
+        return wrapper
+    return decorator
+
+
+class ProgressTracker:
+    """Enhanced progress tracker with ETA calculation"""
+    
+    def __init__(self, total: int, prefix: str = '', suffix: str = '', length: int = 50):
+        self.total = total
+        self.prefix = prefix
+        self.suffix = suffix
+        self.length = length
+        self.current = 0
+        self.start_time = time.time()
+        self.fill = '█'
+    
+    def update(self, current: Optional[int] = None, suffix: str = None):
+        """Update progress bar"""
+        if current is not None:
+            self.current = current
+        else:
+            self.current += 1
+        
+        if suffix:
+            self.suffix = suffix
+        
+        # Calculate ETA
+        elapsed = time.time() - self.start_time
+        if self.current > 0:
+            eta = (elapsed / self.current) * (self.total - self.current)
+            eta_str = f" ETA: {self._format_time(eta)}"
+        else:
+            eta_str = ""
+        
+        # Calculate progress
+        percent = 100 * (self.current / float(self.total)) if self.total > 0 else 100
+        filled_length = int(self.length * self.current // self.total) if self.total > 0 else self.length
+        bar = self.fill * filled_length + '-' * (self.length - filled_length)
+        
+        print(f'\r{self.prefix} |{bar}| {percent:.1f}% {self.suffix}{eta_str}', end='\r')
+        
+        if self.current >= self.total:
+            print()
+    
+    @staticmethod
+    def _format_time(seconds: float) -> str:
+        """Format seconds to human readable time"""
+        if seconds < 60:
+            return f"{seconds:.0f}s"
+        elif seconds < 3600:
+            return f"{seconds/60:.1f}m"
+        else:
+            return f"{seconds/3600:.1f}h"
+
+
+# Legacy progress bar function for compatibility
 def progress_bar(iteration, total, prefix='', suffix='', length=50, fill='█'):
-    """Display a command-line progress bar"""
+    """Display a command-line progress bar (legacy function)"""
+    if total == 0:
+        return
     percent = ("{0:.1f}").format(100 * (iteration / float(total)))
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
@@ -159,26 +524,87 @@ def progress_bar(iteration, total, prefix='', suffix='', length=50, fill='█'):
         print()
 
 
-def run_command(command, verbose=True, sudo=False):
-    """Executes a shell command and returns the output"""
+def run_command(command: str, verbose: bool = True, sudo: bool = False, 
+                timeout_seconds: int = 300, capture_stderr: bool = True) -> Optional[str]:
+    """
+    Executes a shell command and returns the output with timeout support
+    
+    Args:
+        command: The command to execute
+        verbose: Whether to log the command being run
+        sudo: Whether to prepend sudo to the command
+        timeout_seconds: Maximum time to wait for command completion
+        capture_stderr: Whether to capture stderr in output
+    
+    Returns:
+        Command output as string, or None if failed
+    """
     try:
         if sudo and not command.startswith("sudo"):
             command = "sudo " + command
             
         if verbose:
             logger.info(f"Running: {command}")
-            
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        
+        # Use subprocess with timeout
+        result = subprocess.run(
+            command, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            timeout=timeout_seconds
+        )
         
         if result.returncode != 0:
             logger.warning(f"Command returned non-zero exit code: {result.returncode}")
-            logger.warning(f"Error: {result.stderr}")
-            
-        return result.stdout.strip()
+            if result.stderr and verbose:
+                logger.warning(f"Error: {result.stderr}")
+        
+        output = result.stdout.strip()
+        if capture_stderr and result.stderr:
+            output += "\n" + result.stderr.strip()
+        
+        return output
+        
+    except subprocess.TimeoutExpired:
+        logger.error(f"Command timed out after {timeout_seconds} seconds: {command}")
+        raise CommandTimeoutError(f"Command timed out: {command}")
     except Exception as e:
         logger.error(f"Command failed: {command}")
         logger.error(str(e))
         return None
+
+
+def run_command_parallel(commands: List[str], max_workers: int = 4, 
+                         verbose: bool = True) -> Dict[str, Optional[str]]:
+    """
+    Execute multiple commands in parallel
+    
+    Args:
+        commands: List of commands to execute
+        max_workers: Maximum concurrent workers
+        verbose: Whether to log commands
+    
+    Returns:
+        Dictionary mapping command to output
+    """
+    results = {}
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_cmd = {
+            executor.submit(run_command, cmd, verbose, False, 300, True): cmd 
+            for cmd in commands
+        }
+        
+        for future in as_completed(future_to_cmd):
+            cmd = future_to_cmd[future]
+            try:
+                results[cmd] = future.result()
+            except Exception as e:
+                logger.error(f"Parallel command failed: {cmd} - {e}")
+                results[cmd] = None
+    
+    return results
 
 
 def verify_root_privileges():
@@ -193,16 +619,27 @@ def verify_root_privileges():
 def check_macos_compatibility():
     """Checks if the current macOS version is supported"""
     macos_version = platform.mac_ver()[0]
+    
+    # Handle non-macOS systems gracefully
+    if not macos_version:
+        logger.warning("Not running on macOS - some features may not work correctly")
+        return False
+    
     logger.info(f"Detected macOS version: {macos_version}")
     
-    # Convert version string to float for comparison (e.g., "10.15.7" to 10.15)
-    major_minor = ".".join(macos_version.split(".")[:2])
-    version_float = float(major_minor)
-    
-    if version_float < 10.15:
-        logger.warning(f"Current macOS version ({macos_version}) may not be fully supported")
-        logger.warning(f"Recommended: {SUPPORTED_MACOS}")
+    try:
+        # Convert version string to float for comparison (e.g., "10.15.7" to 10.15)
+        major_minor = ".".join(macos_version.split(".")[:2])
+        version_float = float(major_minor)
+        
+        if version_float < 10.15:
+            logger.warning(f"Current macOS version ({macos_version}) may not be fully supported")
+            logger.warning(f"Recommended: {SUPPORTED_MACOS}")
+            return False
+    except (ValueError, IndexError) as e:
+        logger.warning(f"Could not parse macOS version: {e}")
         return False
+    
     return True
 
 
@@ -1132,6 +1569,334 @@ def generate_report(output_path, artifacts_path=None):
         return None
 
 
+def live_triage(output_path: str) -> Dict[str, Any]:
+    """
+    Perform live triage for quick incident response assessment.
+    
+    This function performs a rapid assessment of the system to identify
+    potential indicators of compromise and suspicious activity.
+    
+    Args:
+        output_path: Directory to store triage results
+    
+    Returns:
+        Dictionary containing triage findings
+    """
+    try:
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        triage_dir = output_dir / f"live_triage_{timestamp}"
+        triage_dir.mkdir()
+        
+        logger.info("=" * 60)
+        logger.info("🔥 MacFIRE LIVE TRIAGE MODE 🔥")
+        logger.info("=" * 60)
+        logger.info("Performing rapid incident response assessment...")
+        
+        findings: List[Finding] = []
+        triage_results = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "hostname": run_command("hostname", verbose=False),
+            "findings": [],
+            "summary": {}
+        }
+        
+        # Define triage checks
+        triage_checks = [
+            ("Suspicious Processes", _check_suspicious_processes),
+            ("Network Connections", _check_network_connections),
+            ("Persistence Mechanisms", _check_persistence),
+            ("Recent File Modifications", _check_recent_modifications),
+            ("User Sessions", _check_user_sessions),
+            ("System Integrity", _check_system_integrity),
+        ]
+        
+        progress = ProgressTracker(len(triage_checks), prefix="Live Triage:")
+        
+        for check_name, check_func in triage_checks:
+            logger.info(f"\n[*] Checking: {check_name}")
+            try:
+                check_findings = check_func(triage_dir)
+                findings.extend(check_findings)
+                triage_results["summary"][check_name] = len(check_findings)
+            except Exception as e:
+                logger.error(f"Check failed: {check_name} - {e}")
+                triage_results["summary"][check_name] = f"Error: {e}"
+            progress.update()
+        
+        # Convert findings to serializable format
+        triage_results["findings"] = [
+            {
+                "title": f.title,
+                "description": f.description,
+                "severity": f.severity.value,
+                "category": f.category,
+                "indicator": f.indicator,
+                "mitre_attack": f.mitre_attack,
+                "timestamp": f.timestamp
+            }
+            for f in findings
+        ]
+        
+        # Save results
+        results_file = triage_dir / "triage_results.json"
+        with open(results_file, 'w') as f:
+            json.dump(triage_results, f, indent=2)
+        
+        # Print summary
+        logger.info("\n" + "=" * 60)
+        logger.info("LIVE TRIAGE SUMMARY")
+        logger.info("=" * 60)
+        
+        severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+        for finding in findings:
+            severity_counts[finding.severity.value] += 1
+        
+        if severity_counts["critical"] > 0:
+            logger.warning(f"🔴 CRITICAL findings: {severity_counts['critical']}")
+        if severity_counts["high"] > 0:
+            logger.warning(f"🟠 HIGH findings: {severity_counts['high']}")
+        if severity_counts["medium"] > 0:
+            logger.info(f"🟡 MEDIUM findings: {severity_counts['medium']}")
+        if severity_counts["low"] > 0:
+            logger.info(f"🟢 LOW findings: {severity_counts['low']}")
+        logger.info(f"ℹ️  INFO findings: {severity_counts['info']}")
+        
+        logger.info(f"\nResults saved to: {triage_dir}")
+        
+        return triage_results
+        
+    except Exception as e:
+        logger.error(f"Live triage failed: {e}")
+        return {"error": str(e)}
+
+
+def _check_suspicious_processes(output_dir: Path) -> List[Finding]:
+    """Check for suspicious running processes"""
+    findings = []
+    
+    # Get process list
+    ps_output = run_command("ps aux", verbose=False)
+    if not ps_output:
+        return findings
+    
+    # Save process list
+    with open(output_dir / "processes.txt", 'w') as f:
+        f.write(ps_output)
+    
+    # Check for known suspicious process names
+    suspicious = IOC_PATTERNS.get("suspicious_processes", [])
+    for proc_name in suspicious:
+        if proc_name.lower() in ps_output.lower():
+            findings.append(Finding(
+                title=f"Suspicious Process: {proc_name}",
+                description=f"Process matching known suspicious pattern found: {proc_name}",
+                severity=SeverityLevel.HIGH,
+                category="Suspicious Processes",
+                indicator=proc_name,
+                mitre_attack=MITRE_ATTACK_MAPPINGS.get("discovery", {}).get("process_discovery", "")
+            ))
+    
+    # Check for processes running from unusual locations
+    unusual_paths = ["/tmp/", "/var/tmp/", "/Users/Shared/"]
+    for line in ps_output.split('\n'):
+        for path in unusual_paths:
+            if path in line:
+                findings.append(Finding(
+                    title="Process from Unusual Location",
+                    description=f"Process running from suspicious path: {path}",
+                    severity=SeverityLevel.MEDIUM,
+                    category="Suspicious Processes",
+                    indicator=line.strip()[:100],
+                    mitre_attack="T1059"
+                ))
+                break
+    
+    return findings
+
+
+def _check_network_connections(output_dir: Path) -> List[Finding]:
+    """Check network connections for suspicious activity"""
+    findings = []
+    
+    # Get network connections
+    netstat_output = run_command("netstat -an", verbose=False)
+    if not netstat_output:
+        return findings
+    
+    # Save connections
+    with open(output_dir / "network_connections.txt", 'w') as f:
+        f.write(netstat_output)
+    
+    # Count established connections
+    established = netstat_output.count("ESTABLISHED")
+    listen = netstat_output.count("LISTEN")
+    
+    findings.append(Finding(
+        title="Network Connection Summary",
+        description=f"Found {established} established connections and {listen} listening ports",
+        severity=SeverityLevel.INFO,
+        category="Network",
+        mitre_attack=MITRE_ATTACK_MAPPINGS.get("discovery", {}).get("network_config", "")
+    ))
+    
+    # Check for connections on suspicious ports
+    suspicious_ports = ["4444", "5555", "6666", "31337", "1337"]
+    for port in suspicious_ports:
+        if f".{port}" in netstat_output or f":{port}" in netstat_output:
+            findings.append(Finding(
+                title=f"Suspicious Port Activity: {port}",
+                description=f"Network activity detected on commonly abused port {port}",
+                severity=SeverityLevel.HIGH,
+                category="Network",
+                indicator=f"Port {port}",
+                mitre_attack="T1571"
+            ))
+    
+    return findings
+
+
+def _check_persistence(output_dir: Path) -> List[Finding]:
+    """Check common persistence mechanisms"""
+    findings = []
+    
+    persistence_locations = [
+        "/Library/LaunchAgents",
+        "/Library/LaunchDaemons",
+        os.path.expanduser("~/Library/LaunchAgents"),
+    ]
+    
+    all_agents = []
+    for loc in persistence_locations:
+        if os.path.exists(loc):
+            try:
+                agents = os.listdir(loc)
+                all_agents.extend([(loc, a) for a in agents])
+            except PermissionError:
+                pass
+    
+    # Save launch agents
+    with open(output_dir / "launch_agents.txt", 'w') as f:
+        for loc, agent in all_agents:
+            f.write(f"{loc}/{agent}\n")
+    
+    # Check for suspicious patterns in agent names
+    suspicious_patterns = ["...", "hidden", "update", "helper"]
+    for loc, agent in all_agents:
+        for pattern in suspicious_patterns:
+            if pattern.lower() in agent.lower():
+                findings.append(Finding(
+                    title=f"Suspicious Launch Agent: {agent}",
+                    description=f"Launch agent with suspicious name pattern at {loc}/{agent}",
+                    severity=SeverityLevel.MEDIUM,
+                    category="Persistence",
+                    indicator=f"{loc}/{agent}",
+                    mitre_attack=MITRE_ATTACK_MAPPINGS.get("persistence", {}).get("launch_agents", "")
+                ))
+    
+    findings.append(Finding(
+        title="Persistence Mechanism Summary",
+        description=f"Found {len(all_agents)} launch agents/daemons",
+        severity=SeverityLevel.INFO,
+        category="Persistence"
+    ))
+    
+    return findings
+
+
+def _check_recent_modifications(output_dir: Path) -> List[Finding]:
+    """Check for recently modified files in sensitive locations"""
+    findings = []
+    
+    # Check for recently modified files in system locations
+    recent_output = run_command(
+        "find /Library/LaunchAgents /Library/LaunchDaemons -type f -mtime -1 2>/dev/null",
+        verbose=False
+    )
+    
+    if recent_output:
+        modified_files = [f for f in recent_output.strip().split('\n') if f]
+        with open(output_dir / "recent_modifications.txt", 'w') as f:
+            f.write(recent_output)
+        
+        if modified_files:
+            findings.append(Finding(
+                title="Recently Modified Persistence Files",
+                description=f"Found {len(modified_files)} files modified in the last 24 hours in persistence locations",
+                severity=SeverityLevel.MEDIUM,
+                category="File Modifications",
+                indicator=", ".join(modified_files[:3])
+            ))
+    
+    return findings
+
+
+def _check_user_sessions(output_dir: Path) -> List[Finding]:
+    """Check current user sessions"""
+    findings = []
+    
+    who_output = run_command("who", verbose=False)
+    last_output = run_command("last -10", verbose=False)
+    
+    with open(output_dir / "user_sessions.txt", 'w') as f:
+        f.write("=== Current Sessions ===\n")
+        f.write(who_output or "No active sessions")
+        f.write("\n\n=== Recent Logins ===\n")
+        f.write(last_output or "No login history")
+    
+    if who_output:
+        session_count = len([l for l in who_output.split('\n') if l.strip()])
+        findings.append(Finding(
+            title="Active User Sessions",
+            description=f"Found {session_count} active user sessions",
+            severity=SeverityLevel.INFO,
+            category="User Sessions"
+        ))
+    
+    return findings
+
+
+def _check_system_integrity(output_dir: Path) -> List[Finding]:
+    """Check system integrity protection status"""
+    findings = []
+    
+    # Check SIP status
+    sip_output = run_command("csrutil status", verbose=False)
+    if sip_output:
+        with open(output_dir / "system_integrity.txt", 'w') as f:
+            f.write(sip_output)
+        
+        if "disabled" in sip_output.lower():
+            findings.append(Finding(
+                title="System Integrity Protection Disabled",
+                description="SIP is disabled, which allows modification of protected system files",
+                severity=SeverityLevel.HIGH,
+                category="System Integrity",
+                mitre_attack=MITRE_ATTACK_MAPPINGS.get("defense_evasion", {}).get("rootkit", "")
+            ))
+        else:
+            findings.append(Finding(
+                title="System Integrity Protection Status",
+                description="SIP is enabled",
+                severity=SeverityLevel.INFO,
+                category="System Integrity"
+            ))
+    
+    # Check Gatekeeper status
+    gk_output = run_command("spctl --status", verbose=False)
+    if gk_output and "disabled" in gk_output.lower():
+        findings.append(Finding(
+            title="Gatekeeper Disabled",
+            description="Gatekeeper is disabled, allowing unsigned applications to run",
+            severity=SeverityLevel.MEDIUM,
+            category="System Integrity"
+        ))
+    
+    return findings
+
+
 def main():
     print(BANNER)
     logger.info(f"Supported macOS Versions: {SUPPORTED_MACOS}")
@@ -1176,6 +1941,11 @@ def main():
     analysis_group.add_argument("--timeline-days", type=int, default=7, help="Number of days to include in timeline (default: 7)")
     analysis_group.add_argument("--encrypted-volumes", type=str, metavar="OUTPUT_PATH", help="Identify and analyze encrypted volumes")
     
+    # Incident Response
+    ir_group = parser.add_argument_group('Incident Response')
+    ir_group.add_argument("--live-triage", type=str, metavar="OUTPUT_PATH", help="Perform live triage for quick incident response")
+    ir_group.add_argument("--list-categories", action="store_true", help="List all available artifact categories")
+    
     # Reporting
     report_group = parser.add_argument_group('Reporting')
     report_group.add_argument("--generate-report", type=str, metavar="OUTPUT_PATH", help="Generate a forensic report")
@@ -1184,7 +1954,7 @@ def main():
     
     # Misc options
     parser.add_argument("--quiet", action="store_true", help="Minimize output (quiet mode)")
-    parser.add_argument("--version", action="version", version="macOS Forensic Investigation & Recovery Environment v1.1")
+    parser.add_argument("--version", action="version", version=f"MacFIRE - macOS Forensic Investigation & Response Engine v{__version__}")
     
     args = parser.parse_args()
     
@@ -1266,6 +2036,18 @@ def main():
     
     elif args.compress and args.artifacts_path:
         compress_artifacts(args.artifacts_path)
+    
+    elif hasattr(args, 'live_triage') and args.live_triage:
+        live_triage(args.live_triage)
+    
+    elif hasattr(args, 'list_categories') and args.list_categories:
+        print("\n📂 Available Artifact Categories:\n")
+        for i, (category, info) in enumerate(ARTIFACTS.items(), 1):
+            priority = info.get('priority', 3)
+            priority_label = {1: '🔴 HIGH', 2: '🟡 MEDIUM', 3: '🟢 LOW'}.get(priority, '')
+            print(f"  {i:2}. {category:<25} {priority_label}")
+            print(f"      {info['description']}")
+        print()
     
     else:
         parser.print_help()

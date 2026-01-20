@@ -1,241 +1,185 @@
-# MacFIRE – Mac Forensic Investigation & Response Engine
-![MacFIRE](https://github.com/Masriyan/MacFIRE/blob/main/image.jpg)
-# macFIRE - macOS Forensic Acquisition Tool
+# MacFIRE - macOS Forensic Investigation & Response Engine
 
 <div align="center">
-  <img src="https://img.shields.io/badge/platform-macOS-blue.svg" alt="Platform">
-  <img src="https://img.shields.io/badge/python-3.6+-green.svg" alt="Python">
-  <img src="https://img.shields.io/badge/license-MIT-red.svg" alt="License">
+
+![MacFIRE Banner](banner.png)
+
+[![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)](https://www.apple.com/macos/)
+[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.0.0-orange.svg)](CHANGELOG.md)
+
+**Enterprise-grade forensic acquisition and incident response tool for macOS systems**
+
+[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
+
 </div>
 
-macFIRE is a comprehensive forensic acquisition tool for macOS systems. It enables digital forensic investigators, security professionals, and system administrators to collect vital forensic artifacts, create disk images, and generate detailed reports.
+---
 
-```
-=============================================
-  _____                ____________________ 
- |     |              |                    |
- | Mac |==============| F I R E           |
- |_____|              |____________________|
+## 🔥 What is MacFIRE?
 
- macOS Forensic Investigation & Recovery Environment
- Version 1.1 
- by Sudo3rs
-=============================================
-```
+MacFIRE is a comprehensive forensic acquisition and incident response tool designed specifically for macOS systems. It empowers digital forensic investigators, security analysts, and incident responders to:
 
-## Features
+- **Collect** critical forensic artifacts from macOS systems
+- **Analyze** system state with live triage capabilities  
+- **Detect** indicators of compromise using integrated IOC scanning
+- **Image** disks with forensic integrity verification
+- **Report** findings with detailed HTML reports
 
-- **Comprehensive Artifact Collection**: Collect and preserve critical macOS system artifacts organized by categories
-- **Raw Disk Imaging**: Create forensically sound disk images with integrity verification
-- **Memory Acquisition**: Capture volatile memory data and process information
-- **Detailed Reporting**: Generate HTML reports summarizing collected data and system information
-- **Artifact Compression**: Compress collected artifacts with integrity verification
-- **Rootkit Detection**: Scan for known rootkit signatures and suspicious system modifications
-- **System Timeline**: Generate chronological system activity timelines
-- **Browser History Extraction**: Extract and analyze web browser data
-- **Encrypted Volume Analysis**: Identify and analyze encrypted volumes and containers
-- **Category-based Collection**: Selectively collect artifacts based on specific categories of interest
-- **Integrity Verification**: Automatically calculate SHA-256 hashes for all acquired data
-- **Progress Tracking**: Visual feedback for lengthy operations
-- **Extensive Logging**: Detailed logging of all operations for audit trails
-- **Error Handling**: Comprehensive error detection and reporting
+## ✨ Features
 
-## What's New in Version 1.2
+### 🎯 Incident Response
+- **Live Triage Mode** - Rapid system assessment for active incidents
+- **MITRE ATT&CK Mapping** - Findings mapped to ATT&CK techniques
+- **IOC Scanning** - Detect known indicators of compromise
+- **Persistence Analysis** - Automated detection of persistence mechanisms
 
-- **Simplified Interface**: Streamlined banner and improved user experience
-- **Expanded Capabilities**: Added several new forensic features including memory acquisition, rootkit detection, and timeline generation
-- **New Artifact Categories**: Added Browser Data and Memory Acquisition categories
-- **Enhanced Command Line Interface**: Organized commands into logical groups with better help text
-- **Artifact Compression**: Added ability to compress collected artifacts for easier storage and transfer
-- **Metadata Backup**: Added comprehensive metadata recording for all collected artifacts
-- **Improved Error Handling**: Better error detection and reporting throughout the application
+### 📦 Artifact Collection
+| Category | Description |
+|----------|-------------|
+| System Information | Hardware, software, kernel details |
+| File System | Logs, Spotlight metadata, quarantine events |
+| User Data | Preferences, keychains, messages, browser data |
+| System Security | TCC database, firewall rules, SIP status |
+| Network | Interfaces, connections, DNS, WiFi history |
+| Running System | Processes, open files, kernel extensions |
+| Browser Data | Safari, Chrome, Firefox history & cookies |
+| Apple Unified Logs | System logs, security events, sudo history |
+| USB History | Device connection history, lockdown records |
+| iCloud Artifacts | Cloud sync data, CloudKit cache |
+| Persistence | LaunchAgents, LaunchDaemons, cron, login items |
 
-For a complete list of changes, see the [UPDATE.md](UPDATE.md) file.
+### 🔧 Additional Capabilities
+- **Disk Imaging** - Raw disk acquisition with SHA-256 verification
+- **Memory Analysis** - Volatile data collection and process analysis
+- **Rootkit Detection** - Scan for known rootkit signatures
+- **Timeline Generation** - System activity chronology
+- **Browser Forensics** - Extract and analyze web browser data
+- **Encrypted Volume Analysis** - FileVault and APFS encryption detection
 
-## Supported macOS Versions
-
-- macOS Catalina (10.15) and later
-- Limited support for earlier versions
-
-## Installation
+## 🚀 Installation
 
 ### Prerequisites
+- macOS Catalina (10.15) or later
+- Python 3.8+
+- Administrative privileges (for complete artifact collection)
 
-- Python 3.6+
-- macOS system
-- Administrative (root) privileges for full functionality
+### Quick Install
 
-### Setup
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/Masriyan/macfire.git
-cd macfire
-```
+# Clone the repository
+git clone https://github.com/Masriyan/MacFIRE.git
+cd MacFIRE
 
-2. Make the script executable:
-```bash
+# Make executable
 chmod +x macfire.py
-```
 
-## Usage
-
-### Basic Usage
-
-```bash
-# View help and available options
-python3 macfire.py --help
-
-# List available disks
-python3 macfire.py --list-disks
-
-# Detect external storage devices
-python3 macfire.py --detect-external
-```
-
-### Collecting Forensic Artifacts
-
-```bash
-# Collect all forensic artifacts (requires root)
-sudo python3 macfire.py --collect-artifacts ./evidence
-
-# Collect specific categories of artifacts
-sudo python3 macfire.py --collect-artifacts ./evidence --categories "System Security" "Network"
-
-# Collect and compress artifacts
-sudo python3 macfire.py --collect-artifacts ./evidence --compress
-```
-
-### Disk Imaging
-
-```bash
-# Create a raw disk image with hash verification (requires root)
-sudo python3 macfire.py --create-raw ./disk_images
-
-# Create a raw disk image without hash calculation (faster)
-sudo python3 macfire.py --create-raw ./disk_images --skip-hash
-
-# Unmount a disk before imaging
-sudo python3 macfire.py --unmount /dev/disk2
-
-# Verify a disk image
-python3 macfire.py --verify-image ./disk_images/disk2_20250420_123456.dd
-```
-
-### Memory Acquisition
-
-```bash
-# Acquire memory artifacts
-sudo python3 macfire.py --memory-dump ./memory_evidence
-```
-
-### Security Analysis
-
-```bash
-# Check for rootkits and suspicious modifications
-sudo python3 macfire.py --rootkit-check ./security_check
-
-# Identify and analyze encrypted volumes
-sudo python3 macfire.py --encrypted-volumes ./encryption_info
-```
-
-### Browser History and Timeline Analysis
-
-```bash
-# Extract browser history from Safari, Chrome, and Firefox
-python3 macfire.py --browser-history ./browser_data
-
-# Generate a 7-day system timeline (default)
-sudo python3 macfire.py --system-timeline ./timeline
-
-# Generate a 30-day system timeline
-sudo python3 macfire.py --system-timeline ./timeline --timeline-days 30
-```
-
-### Reporting
-
-```bash
-# Generate a forensic report from collected artifacts
-python3 macfire.py --generate-report ./reports --artifacts-path ./evidence/artifacts_20250401_123456
-
-# Create metadata for collected artifacts
-python3 macfire.py --backup-metadata ./evidence/artifacts_20250401_123456
-```
-
-### Additional Options
-
-```bash
-# Minimize output
-python3 macfire.py --collect-artifacts ./evidence --quiet
-
-# Check tool version
+# Verify installation
 python3 macfire.py --version
 ```
 
-## Artifact Categories
+## ⚡ Quick Start
 
-macFIRE collects the following categories of artifacts:
-
-1. **System Information**: Basic system configuration, hardware details, version info
-2. **File System**: System logs, Spotlight metadata, quarantine database, etc.
-3. **User Data**: User preferences, application data, browser history, messages, keychains
-4. **System Security**: Security logs, TCC database, firewall rules, authorization settings
-5. **Network**: Network interfaces, connections, ARP cache, routing tables, DNS configuration
-6. **Running System**: Current processes, open files, launch agents, kernel extensions
-7. **Browser Data**: Web browser artifacts including history, downloads, cookies, and bookmarks
-8. **Memory Acquisition**: Volatile memory information and running processes
-
-## Sample Reports
-
-<p align="center">
-https://macfire.tiiny.site
-</p>
-
-## Security and Privacy Considerations
-
-- The tool **does not** upload or transmit any collected data
-- All analysis occurs locally on the system
-- Exercise caution and proper authorization when using on systems
-- Review all collected artifacts for sensitive information before sharing
-
-## For Developers
-
-macFIRE is designed to be extended. You can add new artifact categories or collection methods by modifying the `ARTIFACTS` dictionary in the source code.
-
-```python
-# Example of adding a new artifact category
-ARTIFACTS["Custom Category"] = {
-    "description": "Your custom artifact category",
-    "paths": [
-        "/path/to/important/file",
-        "/path/to/important/directory"
-    ],
-    "commands": [
-        "your_command > ./output_file.txt"
-    ]
-}
+### Live Triage (Incident Response)
+```bash
+# Perform rapid incident assessment
+sudo python3 macfire.py --live-triage ./triage_output
 ```
 
-## Contributing
+### Collect All Artifacts
+```bash
+# Full forensic collection
+sudo python3 macfire.py --collect-artifacts ./evidence --compress
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### List Available Categories
+```bash
+# See all artifact categories
+python3 macfire.py --list-categories
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Disk Imaging
+```bash
+# Create forensic disk image
+sudo python3 macfire.py --create-raw ./disk_images
+```
 
-## License
+## 📖 Documentation
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Command Reference
 
-## Acknowledgements
+| Command | Description |
+|---------|-------------|
+| `--live-triage PATH` | Perform live incident triage |
+| `--collect-artifacts PATH` | Collect forensic artifacts |
+| `--categories CAT [CAT...]` | Collect specific categories |
+| `--list-categories` | List all artifact categories |
+| `--create-raw PATH` | Create raw disk image |
+| `--memory-dump PATH` | Acquire memory artifacts |
+| `--rootkit-check PATH` | Scan for rootkits |
+| `--browser-history PATH` | Extract browser data |
+| `--system-timeline PATH` | Generate activity timeline |
+| `--generate-report PATH` | Create HTML report |
 
-- Apple's macOS for providing a rich forensic landscape
-- The digital forensics community for ongoing research and techniques
-- Sudo3rs team for the original concept and development
+### Example Workflows
 
-## Disclaimer
+**Full Incident Response:**
+```bash
+# 1. Live triage for immediate assessment
+sudo python3 macfire.py --live-triage ./ir_case001
 
-This tool should only be used for legitimate forensic investigations, security research, or system administration tasks where you have proper authorization. The authors are not responsible for misuse or illegal applications.
+# 2. Collect persistence-related artifacts
+sudo python3 macfire.py --collect-artifacts ./ir_case001 \
+    --categories "Persistence Mechanisms" "System Security" "Running System"
+
+# 3. Generate forensic report
+python3 macfire.py --generate-report ./ir_case001 --artifacts-path ./ir_case001/artifacts_*
+```
+
+**Targeted Browser Investigation:**
+```bash
+python3 macfire.py --browser-history ./browser_evidence
+python3 macfire.py --collect-artifacts ./browser_evidence --categories "Browser Data"
+```
+
+## 🔐 Security & Privacy
+
+- **100% Local Processing** - No data transmitted externally
+- **Chain of Custody** - SHA-256 hashes for all artifacts
+- **Audit Logging** - Complete operation trail
+- **Minimal Footprint** - No permanent system modifications
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+```bash
+# Development setup
+git clone https://github.com/Masriyan/MacFIRE.git
+cd MacFIRE
+python3 -m venv venv
+source venv/bin/activate
+```
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Authors
+
+- **Sudo3rs** - *Lead Developer* - [security-life.org](https://security-life.org)
+
+## ⚠️ Disclaimer
+
+MacFIRE should only be used for legitimate forensic investigations, security research, or system administration tasks where proper authorization has been obtained. The authors are not responsible for misuse or illegal applications.
+
+---
+
+<div align="center">
+
+**Made with 🔥 by the Sudo3rs Team**
+
+[Report Bug](https://github.com/Masriyan/MacFIRE/issues) • [Request Feature](https://github.com/Masriyan/MacFIRE/issues) • [Security Policy](SECURITY.md)
+
+</div>

@@ -2,11 +2,13 @@
 
 ## Supported Versions
 
-Currently, the following versions of macFIRE are supported with security updates:
+Currently, the following versions of MacFIRE are supported with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.1.x   | :white_check_mark: |
+| 2.0.x   | :white_check_mark: |
+| 1.2.x   | :white_check_mark: |
+| 1.1.x   | :x:                |
 | 1.0.x   | :x:                |
 
 ## Security Considerations
