@@ -31,7 +31,7 @@ We take the security of macFIRE seriously. If you believe you've found a securit
 
 1. **Do Not Disclose Publicly**: Please do not disclose the vulnerability publicly until it has been addressed.
 
-2. **Create a Security Advisory**: Report the vulnerability through GitHub's Security Advisory feature or directly to the maintainers at riyan.pratama@security-life.org (replace with your actual security contact).
+2. **Create a Security Advisory**: Report the vulnerability through GitHub's Security Advisory feature or directly to the maintainers at riyan.pratama@security-life.org.
 
 3. **Include Details**: Provide as much information as possible, including:
    - A clear description of the vulnerability
